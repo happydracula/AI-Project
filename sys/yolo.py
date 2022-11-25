@@ -1,9 +1,10 @@
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
+import keras.backend as K
 net = cv2.dnn.readNet("yolo\yolov4-tiny.weights", "yolo\yolov4-tiny.cfg")
+image = cv2.imread("./images/4.jpg")
 model = cv2.dnn_DetectionModel(net)
-model.setInputParams(size=(500, 500), scale=1/255)
 
 
 def load_classes(filename):
@@ -100,33 +101,56 @@ def drawBoxes(img, classIds, confidences, boxes):
     return img
 
 
-# vid = cv2.VideoCapture("./videos/car_drive.mp4")
+def YoloObjectDetection(frame):
+    model.setInputParams(size=(500, 500), scale=1/255)
+    original_frame = np.array(frame)
+    frame = cv2.resize(frame, (500, 500))
+    img = np.copy(frame)
+    (classIds, confidences, boxes) = model.detect(img)
+    if(len(boxes) > 0):
+        boxes = scale_boxes(boxes, original_frame.shape, img.shape)
+        print(boxes)
+    for i in range(len(boxes)):
+        if(classIds[i] == 5):
+            print('bus')
+            print('bounding box'+str(boxes[i]))
+
+    (classIds, confidences, boxes) = non_max_suppression(
+        classIds, confidences, boxes)
+    img = cv2.resize(img, (original_frame.shape[1], original_frame.shape[0]))
+    result = drawBoxes(img, classIds, confidences, boxes)
+    return result
+
+
+def scale_boxes(boxes, original_image_shape, yolo_image_shape):
+    yolo_height = yolo_image_shape[0]
+    yolo_width = yolo_image_shape[1]
+    original_height = original_image_shape[0]
+    original_width = original_image_shape[1]
+    for box in boxes:
+        x = box[0]
+        y = box[1]
+        w = box[2]
+        h = box[3]
+        x = x*(original_width/yolo_width)
+        y = y*(original_height/yolo_height)
+        w = w*(original_width/yolo_width)
+        h = h*(original_height/yolo_height)
+        box[0] = x
+        box[1] = y
+        box[2] = w
+        box[3] = h
+    return boxes
+
+
+# vid = cv2.VideoCapture("./videos/solidWhiteRight.mp4")
 
 # while(vid.isOpened()):
-#     _, frame = vid.read()
-
-#     frame = cv2.resize(frame, (500, 500))
-#     img = np.copy(frame)
-#     (classIds, confidences, boxes) = model.detect(img)
-#     (classIds, confidences, boxes) = non_max_suppression(
-#         classIds, confidences, boxes)
-#     for i in range(len(boxes)):
-#         for j in range(len(boxes)):
-#             if(i != j):
-#                 print(iou(boxes[i], boxes[j]))
-#     result = drawBoxes(img, classIds, confidences, boxes)
-#     cv2.imshow('result', result)
-#     cv2.waitKey(1)
-frame = cv2.imread('./images/4.jpg')
-frame = cv2.resize(frame, (500, 500))
-img = np.copy(frame)
-(classIds, confidences, boxes) = model.detect(img)
-(classIds, confidences, boxes) = non_max_suppression(
-    classIds, confidences, boxes)
-for i in range(len(boxes)):
-    for j in range(len(boxes)):
-        if(i != j):
-            print(iou(boxes[i], boxes[j]))
-result = drawBoxes(img, classIds, confidences, boxes)
-cv2.imshow('result', result)
-cv2.waitKey(0)
+#     ret, frame = vid.read()
+#     if(ret == True):
+#         result = YoloObjectDetection(frame)
+#         cv2.imshow('result', result)
+#         if(cv2.waitKey(1) == ord('q')):
+#             break
+#     else:
+#         break
