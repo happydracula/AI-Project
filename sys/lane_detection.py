@@ -63,13 +63,11 @@ def canny_detection(image):
     return canny
 
 
-def roi(image, tri):
+def roi(image):
     height = image.shape[0]
     mask = np.zeros_like(image)
     polygons = np.array(
-        [[(tri['x1'], tri['y1']), (tri['x2'], tri['y2']), (tri['x3'], tri['y3'])]])
-    # polygons = np.array(
-    # [[(200, height), (1100, height), (550, 250)]])
+        [[(200, height), (1100, height), (550, 250)]])
     cv2.fillPoly(mask, polygons, 255)
     masked_img = cv2.bitwise_and(mask, image)
     return masked_img
@@ -79,28 +77,8 @@ tr = {}
 index = 1
 
 
-def click_event(event, x, y, flags, params):
-    global index
-    if(index <= 3):
-        if (event == cv2.EVENT_LBUTTONDOWN):
-            font = cv2.FONT_HERSHEY_SIMPLEX
+vid = cv2.VideoCapture("./videos/test2.mp4")
 
-            tr['x'+str(index)] = x
-            tr['y'+str(index)] = y
-            print(str(x)+' '+str(y))
-            index += 1
-
-
-vid = cv2.VideoCapture("./videos/car_drive.mp4")
-fps = vid.get(cv2.CAP_PROP_FPS)
-minutes = 0
-seconds = 1
-frame_id = int(fps*(minutes*60 + seconds))
-vid.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
-img, frame = vid.read()
-cv2.imshow('select', frame)
-cv2.setMouseCallback('select', click_event)
-cv2.waitKey(0)
 while(vid.isOpened()):
 
     ret, frame = vid.read()
@@ -110,7 +88,7 @@ while(vid.isOpened()):
 
         canny = canny_detection(np_arr)
 
-        cropped_img = roi(canny, tr)
+        cropped_img = roi(canny)
 
         lines = cv2.HoughLinesP(cropped_img, 2, np.pi/180, 100,
                                 np.array([]), minLineLength=50, maxLineGap=10)
