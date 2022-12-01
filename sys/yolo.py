@@ -75,12 +75,12 @@ def iou(box1, box2):
     u = (b1['x2']-b1['x1'])*(b1['y2']-b1['y1']) + \
         (b2['x2']-b2['x1'])*(b2['y2']-b2['y1'])
     i = 0
-    if(b2['x1'] >= b1['x2'] or b2['x1'] < b1['x1'] and (b2['y1'] >= b1['y2'] or b2['y2'] <= b1['y1'])):
+    if(b2['x1'] >= b1['x2'] or (b2['x1'] <= b1['x1'] and (b2['y1'] >= b1['y2'] or b2['y2'] <= b1['y1']))):
         i = 0
     else:
         ib = {}
         ib['x1'] = b2['x1']
-        ib['y1'] = b1['y1'] if b1['y1'] >= b2['y1'] else b2['y2']
+        ib['y1'] = b1['y1'] if (b1['y1'] >= b2['y1']) else b2['y1']
         ib['x2'] = b1['x2'] if b1['x2'] <= b2['x2'] else b2['x2']
         ib['y2'] = b1['y2'] if b1['y2'] <= b2['y2'] else b2['y2']
         i = (ib['x2']-ib['x1'])*(ib['y2']-ib['y1'])
@@ -108,15 +108,13 @@ def YoloObjectDetection(frame):
     img = np.copy(frame)
     (classIds, confidences, boxes) = model.detect(img)
     if(len(boxes) > 0):
+        (classIds, confidences, boxes) = non_max_suppression(
+            classIds, confidences, boxes)
         boxes = scale_boxes(boxes, original_frame.shape, img.shape)
-        print(boxes)
-    for i in range(len(boxes)):
-        if(classIds[i] == 5):
-            print('bus')
-            print('bounding box'+str(boxes[i]))
+        for i in range(len(boxes)):
+            for j in range(len(boxes)):
+                print('iou '+str(i)+str(j)+":"+str(iou(boxes[i], boxes[j])))
 
-    (classIds, confidences, boxes) = non_max_suppression(
-        classIds, confidences, boxes)
     img = cv2.resize(img, (original_frame.shape[1], original_frame.shape[0]))
     result = drawBoxes(img, classIds, confidences, boxes)
     return result
